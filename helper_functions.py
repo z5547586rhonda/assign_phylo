@@ -49,31 +49,71 @@ class Node:
 
 
 def neighbor_joining(distances: np.ndarray, labels: list) -> Node:
-    """The Neighbor-Joining algorithm.
-
-    For the same results as in the later test dendrograms;
-    add new nodes to the end of the list/matrix and
-    in case of ties, use np.argmin to choose the joining pair.
-
-    Parameters
-    ----------
-    distances: np.ndarray
-        A 2d square, symmetric distance matrix containing distances between
-        data points. The diagonal entries should always be zero; d(x, x) = 0.
-    labels: list
-        A list of labels corresponding to entries in the distances matrix.
-        Use them to set names of nodes.
-
-    Returns
-    -------
-    Node
-        A root node of the neighbor joining tree.
-
-    """
+        matrix = distances.copy().astype(float)
+        nodes = []
+        for label in labels:
+            nodes.append(Node(label, None, 0, None, 0))
     
-    self.tree = Node()
+        while len(nodes) > 2:
+            n = len(nodes)
+            total_distances = np.sum(matrix, axis=1)
+            q_matrix = np.zeros((n, n))
+            for i in range(n):
+                for j in range(n):
+                    if i != j:
+                        q_matrix[i][j] = (n - 2) * matrix[i][j] -  total_distances[i] - total_distances[j]
+                    else:
+                        q_matrix[i][j] = np.inf
+    
+            min_index = np.argmin(q_matrix)
 
-    raise NotImplementedError()
+            i = min_index // n
+            j = min_index % n
+    
+            distance_ij = matrix[i][j]
+            left_distance = distance_ij / 2 + (total_distances[i] - total_distances[j]) / (2 * (n - 2))
+            right_distance = distance_ij - left_distance
+
+            new_node = Node("U" + str(n), nodes[i], left_distance, nodes[j], right_distance)
+    
+            new_distances = []
+    
+            for k in range(n):
+                if k != i and k != j:
+                    distance = (matrix[i][k] + matrix[j][k] - matrix[i][j]) / 2
+                    new_distances.append(distance)
+    
+            remaining_nodes = []
+            
+            for k in range(n):
+                if k != i and k != j:
+                    remaining_nodes.append(k)
+    
+            new_n = len(remaining_nodes) + 1
+            new_matrix = np.zeros((new_n, new_n))
+
+            for a in range(len(remaining_nodes)):
+                for b in range(len(remaining_nodes)):
+                    new_matrix[a][b] = matrix[remaining_nodes[a]][remaining_nodes[b]]
+    
+            for k in range(len(new_distances)):
+                new_matrix[k][-1] = new_distances[k]
+                new_matrix[-1][k] = new_distances[k]
+    
+            matrix = new_matrix
+            new_nodes = []
+    
+            for k in remaining_nodes:
+                new_nodes.append(nodes[k])
+    
+            new_nodes.append(new_node)
+            nodes = new_nodes
+    
+        distance = matrix[0][1]
+        left_distance = distance / 2
+        right_distance = distance / 2
+        root = Node("root", nodes[0], left_distance, nodes[1], right_distance)
+        return root
 
 
 def plot_nj_tree(tree: Node, ax: Axes = None, **kwargs) -> None:
