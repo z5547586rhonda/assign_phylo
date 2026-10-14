@@ -117,31 +117,74 @@ def neighbor_joining(distances: np.ndarray, labels: list) -> Node:
 
 
 def plot_nj_tree(tree: Node, ax: Axes = None, **kwargs) -> None:
-    """A function for plotting neighbor joining phylogeny dendrogram.
+    """A function for plotting neighbor joining phylogeny dendrogram."""
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 6))
 
-    Parameters
-    ----------
-    tree: Node
-        The root of the phylogenetic tree produced by `neighbor_joining(...)`.
-    ax: Axes
-        A matplotlib Axes object which should be used for plotting.
-    kwargs
-        Feel free to replace/use these with any additional arguments you need.
-        But make sure your function can work without them, for testing purposes.
+    nodes = [tree]
+    x_positions = [0]
+    positions = {}
 
-    Example
-    -------
-    >>> import matplotlib.pyplot as plt
-    >>>
-    >>> tree = neighbor_joining(distances)
-    >>> fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
-    >>> plot_nj_tree(tree=tree, ax=ax)
-    >>> fig.savefig("example.png")
+    i = 0
+    while i < len(nodes):
+        node = nodes[i]
+        x = x_positions[i]
 
-    """
+        if node.left is not None:
+            nodes.append(node.left)
+            x_positions.append(x + node.left_distance)
 
-    return ax
+        if node.right is not None:
+            nodes.append(node.right)
+            x_positions.append(x + node.right_distance)
 
+        i += 1
+
+    stack = [tree]
+    leaf_number = 0
+    
+    while len(stack) > 0:
+        node = stack.pop()
+        if node.left is None and node.right is None:
+            positions[node] = leaf_number
+            leaf_number += 1
+        else:
+            if node.right is not None:
+                stack.append(node.right)
+
+            if node.left is not None:
+                stack.append(node.left)
+
+    for i in range(len(nodes) - 1, -1, -1):
+        node = nodes[i]
+        x = x_positions[i]
+
+        if node.left is not None and node.right is not None:
+            left_y = positions[node.left]
+            right_y = positions[node.right]
+
+            y = (left_y + right_y) / 2
+            positions[node] = y
+
+            left_x = x + node.left_distance
+            right_x = x + node.right_distance
+
+            ax.plot([x, left_x], [left_y, left_y], color="black", linewidth=0.8)
+            ax.plot([x, right_x], [right_y, right_y], color="black", linewidth=0.8)
+
+            ax.plot([x, x], [left_y, right_y], color="black", linewidth=0.8)
+
+            ax.text((x + left_x) / 2, left_y - 0.1, f"{node.left_distance:.2f}", fontsize=7, ha="center")
+            ax.text((x + right_x) / 2, right_y - 0.1, f"{node.right_distance:.2f}", fontsize=7, ha="center")
+        else:
+            ax.text(x + 0.2, positions[node], node.name, va="center")
+
+    ax.set_xlabel("Genetic distance")
+    ax.set_yticks([])
+    ax.invert_yaxis()
+    ax.margins(x=0.15)
+
+    return
 
 def _find_a_parent_to_node(tree: Node, node: Node) -> tuple:
     """Utility function for reroot_tree"""
