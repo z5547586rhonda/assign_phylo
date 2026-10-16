@@ -174,8 +174,11 @@ def plot_nj_tree(tree: Node, ax: Axes = None, **kwargs) -> None:
 
             ax.plot([x, x], [left_y, right_y], color="black", linewidth=0.8)
 
-            ax.text((x + left_x) / 2, left_y - 0.1, f"{node.left_distance:.2f}", fontsize=7, ha="center")
-            ax.text((x + right_x) / 2, right_y - 0.1, f"{node.right_distance:.2f}", fontsize=7, ha="center")
+            if node.confidence is not None:
+                ax.text(x - 2, y, f"{node.confidence:.2f}", fontsize=8, ha="right", va="center", color="blue")
+            else:
+                ax.text((x + left_x) / 2, left_y - 0.1, f"{node.left_distance:.2f}", fontsize=7, ha="center")
+                ax.text((x + right_x) / 2, right_y - 0.1, f"{node.right_distance:.2f}", fontsize=7, ha="center")
         else:
             ax.text(x + 0.2, positions[node], node.name, va="center")
 
